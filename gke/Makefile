@@ -1,4 +1,5 @@
 PROJECT?=pangeo-181919
+NAMESPACE?=staging
 ZONE?=us-central1-b
 CLUSTER?=dev-pangeo-io-cluster
 CORE_POOL?=core-pool
@@ -8,8 +9,13 @@ WORKER_POOL?=dask-pool
 SCHEDULER_POOL?=scheduler-pool
 
 # Creation of the Kubernetes Cluster for Google
-# 
-
+#
+# Notes
+# -----
+# The pangeo-rbac stuff is untested.
+#
+# References
+# ----------
 # https://cloud.google.com/kubernetes-engine/docs/how-to/node-auto-provisioning
 # https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
 
@@ -36,23 +42,23 @@ cluster:
 		--enable-autoscaling --min-nodes=1 --max-nodes=5 \
 		--workload-pool=$(PROJECT).svc.id.goog
 	gcloud container clusters get-credentials $(CLUSTER) --zone=$(ZONE)
-	kubectl create namespace staging
-	kubectl -n staging apply -f pangeo-sa.yaml
+	kubectl create namespace $(NAMESPACE)
+	kubectl -n $(NAMESPACE) apply -f ../pangeo-deploy/templates/pangeo-rbac.yaml
 	gcloud iam service-accounts add-iam-policy-binding \
 	  --role roles/iam.workloadIdentityUser \
-	  --member "serviceAccount:$(PROJECT).svc.id.goog[staging/pangeo]" \
+	  --member "serviceAccount:$(PROJECT).svc.id.goog[$(NAMESPACE)/pangeo]" \
 	  pangeo@pangeo-181919.iam.gserviceaccount.com
 	kubectl annotate serviceaccount \
-	  --namespace staging \
+	  --namespace $(NAMESPACE) \
 	   pangeo \
 	   iam.gke.io/gcp-service-account=pangeo@$(PROJECT).iam.gserviceaccount.com
-	kubectl apply -f https://raw.githubusercontent.com/dask/dask-gateway/0.7.1/resources/helm/dask-gateway/crds/traefik.yaml -n staging
+	kubectl apply -f https://raw.githubusercontent.com/dask/dask-gateway/0.7.1/resources/helm/dask-gateway/crds/traefik.yaml -n $(NAMESPACE)
 	
 
 pangeo:
 	helm upgrade --wait --install \
 		staging pangeo/pangeo \
-		--namespace=staging --version=v0.2.2-n059.h1730652 \
+		--namespace=$(NAMESPACE) --version=v0.2.2-n059.h1730652 \
 		-f values.yaml -f secret.yaml
 
 serviceaccount:
