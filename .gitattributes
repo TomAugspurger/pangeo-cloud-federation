@@ -4,3 +4,4 @@ deployments/icesat2/secrets/** filter=git-crypt diff=git-crypt
 deployments/hydro/secrets/** filter=git-crypt diff=git-crypt
 deployments/nasa/secrets/** filter=git-crypt diff=git-crypt
 deployments/ooi/secrets/** filter=git-crypt-ooi diff=git-crypt-ooi
+gke/secret.yaml
