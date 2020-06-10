@@ -90,21 +90,21 @@ jupyter-pool:
 		--enable-autoupgrade \
 		--enable-autorepair \
 		--enable-autoscaling --min-nodes=0 --max-nodes=30 \
-    	--node-labels="hub.jupyter.org/nodepurpose=user" \
-		--node-taints=hub.juptyer.org/dedicated=user:NoSchedule
+		--node-labels="hub.jupyter.org/node-purpose=user" \
+	    --node-taints hub.jupyter.org_dedicated=user:NoSchedule
 
 jupyter-pool-small:
-	gcloud container node-pools create jupyter-pool-small \
+	gcloud container node-pools create $(JUPYTER_POOL_SMALL) \
 		--cluster=$(CLUSTER) \
 		--workload-metadata=GKE_METADATA \
 		--num-nodes=0 \
-		--machine-type=n1-standard-4 \
+		--machine-type=n1-highmem-2 \
 		--zone=$(ZONE) \
 		--enable-autoupgrade \
 		--enable-autorepair \
 		--enable-autoscaling --min-nodes=0 --max-nodes=30 \
-    	--node-labels="hub.jupyter.org/nodepurpose=user" \
-		--node-taints=hub.juptyer.org/dedicated=user:NoSchedule
+		--node-labels="hub.jupyter.org/node-purpose=user" \
+	    --node-taints hub.jupyter.org_dedicated=user:NoSchedule
 
 jupyter-gpu-pool:
 	# I think that GKE automatically adds the GPU taint
@@ -118,7 +118,7 @@ jupyter-gpu-pool:
 		--enable-autoupgrade \
 		--enable-autorepair \
 		--enable-autoscaling --min-nodes=0 --max-nodes=4 \
-    	--node-labels="hub.jupyter.org/nodepurpose=user" \
+		--node-labels="hub.jupyter.org/node-purpose=user" \
 		--node-taints=hub.juptyer.org/dedicated=user:NoSchedule
 
 dask-pool:
@@ -126,11 +126,11 @@ dask-pool:
 		--cluster=$(CLUSTER) \
 		--workload-metadata=GKE_METADATA \
 		--num-nodes=0 \
-		--machine-type=n1-highmem-16 \
+		--machine-type=n1-highmem-4 \
 		--zone=$(ZONE) \
 		--enable-autoupgrade \
 		--enable-autorepair \
-		--enable-autoscaling --min-nodes=0 --max-nodes=50 \
+		--enable-autoscaling --min-nodes=0 --max-nodes=300 \
 		--node-labels="k8s.dask.org/node-purpose=worker" \
 		--node-taints=k8s.dask.org/dedicated=worker:NoSchedule
 
