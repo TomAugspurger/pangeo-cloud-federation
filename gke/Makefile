@@ -53,7 +53,17 @@ cluster:
 	   pangeo \
 	   iam.gke.io/gcp-service-account=pangeo@$(PROJECT).iam.gserviceaccount.com
 	kubectl apply -f https://raw.githubusercontent.com/dask/dask-gateway/0.7.1/resources/helm/dask-gateway/crds/traefik.yaml -n $(NAMESPACE)
-	
+
+
+serviceaccount:
+	gcloud iam service-accounts add-iam-policy-binding \
+		--role roles/iam.workloadIdentityUser \
+		--member "serviceAccount:$(PROJECT).svc.id.goog[$(NAMESPACE)/pangeo]" \
+		pangeo@$(PROJECT).iam.gserviceaccount.com
+	kubectl annotate serviceaccount \
+	  --namespace $(NAMESPACE) \
+		pangeo \
+		iam.gke.io/gcp-service-account=pangeo@$(PROJECT).iam.gserviceaccount.com
 
 pangeo:
 	helm upgrade --wait --install \
@@ -61,8 +71,8 @@ pangeo:
 		--namespace=$(NAMESPACE) --version=v0.2.2-n059.h1730652 \
 		-f values.yaml -f secret.yaml
 
-serviceaccount:
-	gcloud iam service-accounts create pangeo --display-name=pangeo --description="Service account for notebook, scheduler, and worker pods"
+lifecycle: lifecycle.json
+	gsutil lifecycle set $< gs://pangeo-scratch
 
 
 # ---------------------------------------------------------------------------
