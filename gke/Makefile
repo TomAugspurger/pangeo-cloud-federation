@@ -61,7 +61,7 @@ serviceaccount:
 		--member "serviceAccount:$(PROJECT).svc.id.goog[$(NAMESPACE)/pangeo]" \
 		pangeo@$(PROJECT).iam.gserviceaccount.com
 	kubectl annotate serviceaccount \
-	  --namespace $(NAMESPACE) \
+	  --overwrite --namespace $(NAMESPACE) \
 		pangeo \
 		iam.gke.io/gcp-service-account=pangeo@$(PROJECT).iam.gserviceaccount.com
 
