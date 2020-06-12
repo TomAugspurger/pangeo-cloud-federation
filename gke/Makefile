@@ -69,7 +69,7 @@ pangeo:
 	helm upgrade --wait --install \
 		staging pangeo/pangeo \
 		--namespace=$(NAMESPACE) --version=v0.2.2-n059.h1730652 \
-		-f values.yaml -f secret.yaml
+		-f values.yaml -f secrets.yaml
 
 lifecycle: lifecycle.json
 	gsutil lifecycle set $< gs://pangeo-scratch
