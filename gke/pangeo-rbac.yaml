@@ -1,0 +1,11 @@
+# Source: pangeo-deploy/templates/pangeo-rbac.yaml
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: pangeo
+  namespace: default
+  labels:
+    chart: pangeo-deploy-0.1.0
+    component: pangeo
+    heritage: Helm
+    release: RELEASE-NAME

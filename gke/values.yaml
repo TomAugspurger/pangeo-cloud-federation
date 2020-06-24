@@ -1,75 +1,108 @@
-jupyterhub:
-  hub:
-    services:
-      dask-gateway:
-        url: "http://traefik-staging-dask-gateway.staging"
-  auth:
-    type: dummy
-    dummy:
-      password: "dask"
-    whitelist:
-      users:
-        - a
-    admin:
-      users:
-        - a
-  singleuser:
-    image:
-      name: pangeo/base-notebook
-      tag: 2020.06.07
-    serviceAccountName: pangeo
-    extraEnv:
-      # The default worker image matches the singleuser image.
-      DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: '{JUPYTER_IMAGE_SPEC}'
-
-  scheduling:
-    userScheduler:
-      enabled: true
-    podPriority:
-      enabled: true
-    userPlaceholder:
-      enabled: false
-  
-dask-gateway:
-  gateway:
-    prefix: /services/dask-gateway
-    proxy-address: gateway://traefik-staging-dask-gateway.staging:80
+pangeo:
+  jupyterhub:
+    hub:
+      services:
+        dask-gateway:
+          url: "http://traefik-staging-metrics-dask-gateway.metrics"
+      extraConfig:
+        noAuthMetrics: |
+          c.JupyterHub.authenticate_prometheus = False
+      service:
+        annotations:
+          prometheus.io/scrape: 'true'
+          prometheus.io/path: '/hub/metrics'
 
     auth:
-      type: jupyterhub
-    backend:
-      scheduler:
-        extraPodConfig:
-          serviceAccountName: pangeo
-          tolerations:
-            - key: "k8s.dask.org/dedicated"
-              operator: "Equal"
-              value: "scheduler"
-              effect: "NoSchedule"
-            - key: "k8s.dask.org_dedicated"
-              operator: "Equal"
-              value: "scheduler"
-              effect: "NoSchedule"
-      worker:
-        extraContainerConfig:
-          securityContext:
-            runAsGroup: 1000
-            runAsUser: 1000
-        extraPodConfig:
-          tolerations:
-            - key: "k8s.dask.org/dedicated"
-              operator: "Equal"
-              value: "worker"
-              effect: "NoSchedule"
-            - key: "k8s.dask.org_dedicated"
-              operator: "Equal"
-              value: "worker"
-              effect: "NoSchedule"
-            - key: "cloud.google.com/gke-preemptible"
-              operator: "Equal"
-              value: "true"
-              effect: "NoSchedule"
-          serviceAccountName: pangeo
-          automountServiceAccountToken: true
-          securityContext:
-            fsGroup: 1000
+      type: dummy
+      dummy:
+        password: "dask"
+      whitelist:
+        users:
+          - a
+      admin:
+        users:
+          - a
+    singleuser:
+      image:
+        name: pangeo/base-notebook
+        tag: 2020.06.07
+      serviceAccountName: pangeo
+      extraEnv:
+        # The default worker image matches the singleuser image.
+        DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: '{JUPYTER_IMAGE_SPEC}'
+        DASK_GATEWAY__ADDRESS: "https://staging.hub.pangeo.io/services/dask-gateway/"
+        DASK_GATEWAY__PROXY_ADDRESS: "gateway://traefik-dev-staging-dask-gateway.dev-staging:80"
+
+
+      cpu:
+        limit: 0.5
+        guarantee: 0.5
+      memory:
+        limit: 1G
+        guarantee: 1G
+
+    scheduling:
+      userScheduler:
+        enabled: true
+      podPriority:
+        enabled: true
+      userPlaceholder:
+        enabled: false
+    
+  dask-gateway:
+    gateway:
+      prefix: /services/dask-gateway
+      proxy-address: gateway://traefik-staging-dask-gateway.staging:80
+  
+      auth:
+        type: jupyterhub
+      backend:
+        scheduler:
+          extraPodConfig:
+            serviceAccountName: pangeo
+            tolerations:
+              - key: "k8s.dask.org/dedicated"
+                operator: "Equal"
+                value: "scheduler"
+                effect: "NoSchedule"
+              - key: "k8s.dask.org_dedicated"
+                operator: "Equal"
+                value: "scheduler"
+                effect: "NoSchedule"
+        worker:
+          extraContainerConfig:
+            securityContext:
+              runAsGroup: 1000
+              runAsUser: 1000
+          extraPodConfig:
+            tolerations:
+              - key: "k8s.dask.org/dedicated"
+                operator: "Equal"
+                value: "worker"
+                effect: "NoSchedule"
+              - key: "k8s.dask.org_dedicated"
+                operator: "Equal"
+                value: "worker"
+                effect: "NoSchedule"
+              - key: "cloud.google.com/gke-preemptible"
+                operator: "Equal"
+                value: "true"
+                effect: "NoSchedule"
+            serviceAccountName: pangeo
+            automountServiceAccountToken: true
+            securityContext:
+              fsGroup: 1000
+
+grafana:
+  ingress:
+    enabled: true
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: prometheus
+          orgId: 1
+          type: prometheus
+          url: http://staging-prometheus-server
+          access: proxy
+          isDefault: true

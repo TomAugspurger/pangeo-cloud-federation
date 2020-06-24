@@ -1,12 +1,7 @@
 PROJECT?=pangeo-181919
-NAMESPACE?=staging
+NAMESPACE?=metrics
 ZONE?=us-central1-b
-CLUSTER?=dev-pangeo-io-cluster
-CORE_POOL?=core-pool
-JUPYTER_POOL?=jupyter-pool
-JUPYTER_POOL_SMALL?=jupyter-pool-small
-WORKER_POOL?=dask-pool
-SCHEDULER_POOL?=scheduler-pool
+CLUSTER?=metrics
 
 # Creation of the Kubernetes Cluster for Google
 #
@@ -30,20 +25,30 @@ SCHEDULER_POOL?=scheduler-pool
 test:
 	@echo $(CLUSTER) $(WORKER_POOL)
 
-cluster:
-	echo "[Creating core pool in $(ZONE)]"
+up:
+	echo "[Creating cluster pool in $(ZONE)]"
 	gcloud container clusters create $(CLUSTER) \
 		--num-nodes=1 \
 		--zone=$(ZONE) \
+		--labels=cluster=$(CLUSTER) \
 		--cluster-version=latest \
 		--no-enable-ip-alias \
-		--enable-autoupgrade \
+		--no-enable-legacy-authorization \
+		--enable-autoupgrade --enable-autorepair --max-surge-upgrade=1 \
 		--machine-type=n1-standard-1 \
 		--enable-autoscaling --min-nodes=1 --max-nodes=5 \
-		--workload-pool=$(PROJECT).svc.id.goog
+		--node-labels="hub.jupyter.org/nodepurpose=core"
+		--enable-autoprovisioning --autoprovisioning-config-file autoprovisioning.json \
+		--autoprovisioning-service-account=pangeo \
+		--enable-vertical-pod-autoscaling \
+		--workload-metadata=GKE_METADATA \
+		--workload-pool=$(PROJECT).svc.id.goog \
+		--enable-stackdriver-kubernetes
 	gcloud container clusters get-credentials $(CLUSTER) --zone=$(ZONE)
 	kubectl create namespace $(NAMESPACE)
-	kubectl -n $(NAMESPACE) apply -f ../pangeo-deploy/templates/pangeo-rbac.yaml
+	# kubectl -n $(NAMESPACE) apply -f ../../pangeo-deploy/templates/pangeo-rbac.yaml
+
+stuff:
 	gcloud iam service-accounts add-iam-policy-binding \
 	  --role roles/iam.workloadIdentityUser \
 	  --member "serviceAccount:$(PROJECT).svc.id.goog[$(NAMESPACE)/pangeo]" \
@@ -67,91 +72,18 @@ serviceaccount:
 
 pangeo:
 	helm upgrade --wait --install \
-		staging pangeo/pangeo \
-		--namespace=$(NAMESPACE) --version=v0.2.2-n059.h1730652 \
+		staging ../pangeo-deploy \
+		--namespace=$(NAMESPACE) --version=0.1.0 \
 		-f values.yaml -f secrets.yaml
 
-lifecycle: lifecycle.json
-	gsutil lifecycle set $< gs://pangeo-scratch
+print-grafana-password:
+	@kubectl get secret --namespace metrics staging-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo 
 
+forward-grafana:
+	kubectl port-forward -n metrics `kubectl -n metrics get pod -l 'app.kubernetes.io/name=grafana' -o name` 3000
 
-# ---------------------------------------------------------------------------
-# Node Pools
-#
-core-pool:
-	gcloud container node-pools create $(CORE_POOL) \
-		--cluster=$(CLUSTER) \
-		--workload-metadata=GKE_METADATA \
-		--num-nodes=0 \
-		--machine-type=n1-standard-2 \
-		--zone=$(ZONE) \
-		--enable-autoupgrade \
-		--enable-autorepair \
-		--enable-autoscaling --min-nodes=0 --max-nodes=100 \
-    	--node-labels="hub.jupyter.org/nodepurpose=core"
+forward-prometheus:
+	kubectl port-forward -n metrics `kubectl -n metrics get pod -l 'app=prometheus,component=server' -o name` 9090
 
-jupyter-pool:
-	gcloud container node-pools create $(JUPYTER_POOL) \
-		--cluster=$(CLUSTER) \
-		--workload-metadata=GKE_METADATA \
-		--num-nodes=0 \
-		--machine-type=n1-highmem-16 \
-		--zone=$(ZONE) \
-		--enable-autoupgrade \
-		--enable-autorepair \
-		--enable-autoscaling --min-nodes=0 --max-nodes=30 \
-		--node-labels="hub.jupyter.org/node-purpose=user" \
-	    --node-taints hub.jupyter.org_dedicated=user:NoSchedule
-
-jupyter-pool-small:
-	gcloud container node-pools create $(JUPYTER_POOL_SMALL) \
-		--cluster=$(CLUSTER) \
-		--workload-metadata=GKE_METADATA \
-		--num-nodes=0 \
-		--machine-type=n1-highmem-2 \
-		--zone=$(ZONE) \
-		--enable-autoupgrade \
-		--enable-autorepair \
-		--enable-autoscaling --min-nodes=0 --max-nodes=30 \
-		--node-labels="hub.jupyter.org/node-purpose=user" \
-	    --node-taints hub.jupyter.org_dedicated=user:NoSchedule
-
-jupyter-gpu-pool:
-	# I think that GKE automatically adds the GPU taint
-	gcloud container node-pools create jupyter-gpu-pool \
-		--cluster=$(CLUSTER) \
-		--workload-metadata=GKE_METADATA \
-		--num-nodes=0 \
-		--machine-type=n1-standard-4 \
-		--accelerator=type=nvidia-tesla-t4,count=1 \
-		--zone=$(ZONE) \
-		--enable-autoupgrade \
-		--enable-autorepair \
-		--enable-autoscaling --min-nodes=0 --max-nodes=4 \
-		--node-labels="hub.jupyter.org/node-purpose=user" \
-		--node-taints=hub.juptyer.org/dedicated=user:NoSchedule
-
-dask-pool:
-	gcloud container node-pools create $(WORKER_POOL) \
-		--cluster=$(CLUSTER) \
-		--workload-metadata=GKE_METADATA \
-		--num-nodes=0 \
-		--machine-type=n1-highmem-4 \
-		--zone=$(ZONE) \
-		--enable-autoupgrade \
-		--enable-autorepair \
-		--enable-autoscaling --min-nodes=0 --max-nodes=300 \
-		--node-labels="k8s.dask.org/node-purpose=worker" \
-		--node-taints=k8s.dask.org/dedicated=worker:NoSchedule
-
-scheduler-pool:
-	gcloud container node-pools create $(SCHEDULER_POOL) \
-		--cluster=$(CLUSTER) \
-		--workload-metadata=GKE_METADATA \
-		--num-nodes=0 \
-		--machine-type=n1-highmem-16 \
-		--zone=$(ZONE) \
-		--enable-autoupgrade \
-		--enable-autorepair \
-		--enable-autoscaling --min-nodes=0 --max-nodes=50 \
-		--node-taints=k8s.dask.org/dedicated=scheduler:NoSchedule
+destroy:
+	gcloud container clusters delete $(CLUSTER)
