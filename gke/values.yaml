@@ -3,7 +3,7 @@ pangeo:
     hub:
       services:
         dask-gateway:
-          url: "http://traefik-staging-metrics-dask-gateway.metrics"
+          url: "http://traefik-staging-dask-gateway.metrics"
       extraConfig:
         noAuthMetrics: |
           c.JupyterHub.authenticate_prometheus = False
@@ -30,8 +30,8 @@ pangeo:
       extraEnv:
         # The default worker image matches the singleuser image.
         DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: '{JUPYTER_IMAGE_SPEC}'
-        DASK_GATEWAY__ADDRESS: "https://staging.hub.pangeo.io/services/dask-gateway/"
-        DASK_GATEWAY__PROXY_ADDRESS: "gateway://traefik-dev-staging-dask-gateway.dev-staging:80"
+        DASK_GATEWAY__ADDRESS: "http://34.67.241.223/services/dask-gateway/"
+        DASK_GATEWAY__PROXY_ADDRESS: "gateway://traefik-staging-metrics-dask-gateway.staging-metrics:80"
 
 
       cpu:
@@ -58,6 +58,13 @@ pangeo:
         type: jupyterhub
       backend:
         scheduler:
+          cores:
+            request: 0.5
+            limit: 0.5
+          memory:
+            request: 1G
+            limit: 1G
+
           extraPodConfig:
             serviceAccountName: pangeo
             tolerations:
@@ -70,6 +77,13 @@ pangeo:
                 value: "scheduler"
                 effect: "NoSchedule"
         worker:
+          cores:
+            request: 0.5
+            limit: 0.5
+          memory:
+            request: 1G
+            limit: 1G
+
           extraContainerConfig:
             securityContext:
               runAsGroup: 1000
