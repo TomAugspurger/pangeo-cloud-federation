@@ -31,7 +31,7 @@ pangeo:
         # The default worker image matches the singleuser image.
         DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: '{JUPYTER_IMAGE_SPEC}'
         DASK_GATEWAY__ADDRESS: "http://34.67.241.223/services/dask-gateway/"
-        DASK_GATEWAY__PROXY_ADDRESS: "gateway://traefik-staging-metrics-dask-gateway.staging-metrics:80"
+        DASK_GATEWAY__PROXY_ADDRESS: "gateway://traefik-staging-dask-gateway.metrics:80"
 
 
       cpu:
