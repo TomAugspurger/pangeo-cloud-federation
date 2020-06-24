@@ -33,7 +33,6 @@ pangeo:
         DASK_GATEWAY__ADDRESS: "http://34.67.241.223/services/dask-gateway/"
         DASK_GATEWAY__PROXY_ADDRESS: "gateway://traefik-staging-dask-gateway.metrics:80"
 
-
       cpu:
         limit: 0.5
         guarantee: 0.5
@@ -53,9 +52,41 @@ pangeo:
     gateway:
       prefix: /services/dask-gateway
       proxy-address: gateway://traefik-staging-dask-gateway.staging:80
-  
       auth:
         type: jupyterhub
+      extraConfig:
+        optionHandler: |
+          from dask_gateway_server.options import Options, Integer, Float, String
+          def cluster_options(user):
+             def option_handler(options):
+                 if ":" not in options.image:
+                     raise ValueError("When specifying an image you must also provide a tag")
+                 extra_annotations = {
+                     "hub.jupyter.org/username": user.name,
+                     "prometheus.io/scrape": "true"
+                 }
+                 extra_labels = {
+                     "hub.jupyter.org/username": user.name,
+                 }
+                 return {
+                     "worker_cores_limit": options.worker_cores,
+                     "worker_cores": min(options.worker_cores / 2, 1),
+                     "worker_memory": "%fG" % options.worker_memory,
+                     "image": options.image,
+                     "scheduler_extra_pod_annotations": extra_annotations,
+                     "worker_extra_pod_annotations": extra_annotations,
+                     "scheduler_extra_pod_labels": extra_labels,
+                     "worker_extra_pod_labels": extra_labels,
+                 }
+             return Options(
+                 Integer("worker_cores", 2, min=1, max=4, label="Worker Cores"),
+                 Float("worker_memory", 4, min=1, max=8, label="Worker Memory (GiB)"),
+                 String("image", default="pangeo/pangeo-notebook:latest", label="Image"),
+                 handler=option_handler,
+             )
+
+          c.Backend.cluster_options = cluster_options
+
       backend:
         scheduler:
           cores:

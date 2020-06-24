@@ -35,8 +35,8 @@ up:
 		--no-enable-ip-alias \
 		--no-enable-legacy-authorization \
 		--enable-autoupgrade --enable-autorepair --max-surge-upgrade=1 \
-		--machine-type=n1-standard-1 \
-		--enable-autoscaling --min-nodes=1 --max-nodes=5 \
+		--machine-type=n1-standard-4 \
+		--enable-autoscaling --min-nodes=1 --max-nodes=7 \
 		--node-labels="hub.jupyter.org/nodepurpose=core"
 		--enable-autoprovisioning --autoprovisioning-config-file autoprovisioning.json \
 		--autoprovisioning-service-account=pangeo \
@@ -49,6 +49,7 @@ up:
 	# kubectl -n $(NAMESPACE) apply -f ../../pangeo-deploy/templates/pangeo-rbac.yaml
 
 stuff:
+	kubectl -n $(NAMESPACE) apply -f pangeo-rbac.yaml
 	gcloud iam service-accounts add-iam-policy-binding \
 	  --role roles/iam.workloadIdentityUser \
 	  --member "serviceAccount:$(PROJECT).svc.id.goog[$(NAMESPACE)/pangeo]" \

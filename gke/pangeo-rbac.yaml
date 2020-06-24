@@ -3,7 +3,7 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: pangeo
-  namespace: default
+  namespace: metrics
   labels:
     chart: pangeo-deploy-0.1.0
     component: pangeo
