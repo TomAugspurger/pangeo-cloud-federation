@@ -15,9 +15,11 @@ pangeo:
   # and then configure as per the dependent chart's values.yaml. Don't forget to indent!
 
   jupyterhub:
-    # Helm config for jupyterhub goes here
-    # See https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/values.yaml
-
+    hub:
+      service:
+        annotations:
+          prometheus.io/scrape: 'true'
+          prometheus.io/path: '/hub/metrics'
     singleuser:
       cpu:
         limit: 2

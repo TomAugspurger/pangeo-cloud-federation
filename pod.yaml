@@ -1,0 +1,211 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    hub.jupyter.org/username: 0000-0002-8136-7087
+  creationTimestamp: "2020-06-15T19:51:59Z"
+  labels:
+    app: jupyterhub
+    chart: jupyterhub-0.9.0-beta.4.n008.hb20ad22
+    component: singleuser-server
+    heritage: jupyterhub
+    hub.jupyter.org/network-access-hub: "true"
+    release: ocean-prod
+  name: jupyter-0000-2d0002-2d8136-2d7087
+  namespace: ocean-prod
+  resourceVersion: "354832308"
+  selfLink: /api/v1/namespaces/ocean-prod/pods/jupyter-0000-2d0002-2d8136-2d7087
+  uid: 2597a228-aa76-43cb-90a8-ebef160c629e
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: hub.jupyter.org/node-purpose
+            operator: In
+            values:
+            - user
+  containers:
+  - args:
+    - jupyterhub-singleuser
+    - --ip=0.0.0.0
+    - --port=8888
+    - --NotebookApp.default_url=/lab
+    env:
+    - name: DASK_GATEWAY__ADDRESS
+      value: https://ocean.pangeo.io/services/dask-gateway/
+    - name: DASK_GATEWAY__AUTH__TYPE
+      value: jupyterhub
+    - name: DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE
+      value: '{JUPYTER_IMAGE_SPEC}'
+    - name: DASK_GATEWAY__PROXY_ADDRESS
+      value: gateway://traefik-ocean-prod-dask-gateway.ocean-prod:80
+    - name: GLOBUS_LOCAL_ENDPOINT
+    - name: JUPYTERHUB_API_TOKEN
+      value: 41c1da4b2e4441369fcaf30389e19eea
+    - name: JPY_API_TOKEN
+      value: 41c1da4b2e4441369fcaf30389e19eea
+    - name: JUPYTERHUB_ADMIN_ACCESS
+      value: "1"
+    - name: JUPYTERHUB_CLIENT_ID
+      value: jupyterhub-user-0000-0002-8136-7087
+    - name: JUPYTERHUB_HOST
+    - name: JUPYTERHUB_OAUTH_CALLBACK_URL
+      value: /user/0000-0002-8136-7087/oauth_callback
+    - name: JUPYTERHUB_USER
+      value: 0000-0002-8136-7087
+    - name: JUPYTERHUB_SERVER_NAME
+    - name: JUPYTERHUB_API_URL
+      value: http://10.4.7.140:8081/hub/api
+    - name: JUPYTERHUB_ACTIVITY_URL
+      value: http://10.4.7.140:8081/hub/api/users/0000-0002-8136-7087/activity
+    - name: JUPYTERHUB_BASE_URL
+      value: /
+    - name: JUPYTERHUB_SERVICE_PREFIX
+      value: /user/0000-0002-8136-7087/
+    - name: MEM_LIMIT
+      value: "4294967296"
+    - name: MEM_GUARANTEE
+      value: "1073741824"
+    - name: CPU_LIMIT
+      value: "2.0"
+    - name: CPU_GUARANTEE
+      value: "0.3"
+    - name: JUPYTER_IMAGE_SPEC
+      value: us.gcr.io/pangeo-181919/ocean-pangeo-io-notebook:b36b8b7
+    - name: JUPYTER_IMAGE
+      value: us.gcr.io/pangeo-181919/ocean-pangeo-io-notebook:b36b8b7
+    image: us.gcr.io/pangeo-181919/ocean-pangeo-io-notebook:b36b8b7
+    imagePullPolicy: IfNotPresent
+    lifecycle: {}
+    name: notebook
+    ports:
+    - containerPort: 8888
+      name: notebook-port
+      protocol: TCP
+    resources:
+      limits:
+        cpu: "2"
+        memory: "4294967296"
+      requests:
+        cpu: 300m
+        memory: "1073741824"
+    securityContext:
+      runAsGroup: 0
+      runAsUser: 1000
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /home/jovyan
+      name: home
+      subPath: home/ocean.pangeo.io/0000-2d0002-2d8136-2d7087
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: pangeo-token-2vh2n
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  initContainers:
+  - command:
+    - sh
+    - -c
+    - id && chown 1000:1000 /home/jovyan && ls -lhd /home/jovyan
+    image: busybox
+    imagePullPolicy: Always
+    name: volume-mount-hack
+    resources: {}
+    securityContext:
+      runAsUser: 0
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /home/jovyan
+      name: home
+      subPath: home/ocean.pangeo.io/0000-2d0002-2d8136-2d7087
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: pangeo-token-2vh2n
+      readOnly: true
+  nodeName: gke-dev-pangeo-io-clus-jupyter-pool-2-211d1fde-x6x3
+  priority: 0
+  priorityClassName: ocean-prod-default-priority
+  restartPolicy: OnFailure
+  schedulerName: ocean-prod-user-scheduler
+  securityContext:
+    fsGroup: 100
+  serviceAccount: pangeo
+  serviceAccountName: pangeo
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoSchedule
+    key: hub.jupyter.org/dedicated
+    operator: Equal
+    value: user
+  - effect: NoSchedule
+    key: hub.jupyter.org_dedicated
+    operator: Equal
+    value: user
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: home
+    persistentVolumeClaim:
+      claimName: home-nfs
+  - name: pangeo-token-2vh2n
+    secret:
+      defaultMode: 420
+      secretName: pangeo-token-2vh2n
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2020-06-15T19:52:04Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2020-06-15T19:52:05Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2020-06-15T19:52:05Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2020-06-15T19:51:59Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://9f0cad36c4b8764ea463107ce600e4c43140b28743316b9bfd81f2451b017688
+    image: us.gcr.io/pangeo-181919/ocean-pangeo-io-notebook:b36b8b7
+    imageID: docker-pullable://us.gcr.io/pangeo-181919/ocean-pangeo-io-notebook@sha256:2111426783d6451b4f62459d0570ca3902a198713a3c52bdcbf46e92228be649
+    lastState: {}
+    name: notebook
+    ready: true
+    restartCount: 0
+    state:
+      running:
+        startedAt: "2020-06-15T19:52:04Z"
+  hostIP: 10.128.0.169
+  initContainerStatuses:
+  - containerID: docker://dad54ae0401a2cf3f520821d40c6c83d9ca84e8d450effaf2f93d9eeb6f22721
+    image: busybox:latest
+    imageID: docker-pullable://busybox@sha256:fd4a8673d0344c3a7f427fe4440d4b8dfd4fa59cfabbd9098f9eb0cb4ba905d0
+    lastState: {}
+    name: volume-mount-hack
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: docker://dad54ae0401a2cf3f520821d40c6c83d9ca84e8d450effaf2f93d9eeb6f22721
+        exitCode: 0
+        finishedAt: "2020-06-15T19:52:03Z"
+        reason: Completed
+        startedAt: "2020-06-15T19:52:03Z"
+  phase: Running
+  podIP: 10.32.38.54
+  qosClass: Burstable
+  startTime: "2020-06-15T19:51:59Z"
