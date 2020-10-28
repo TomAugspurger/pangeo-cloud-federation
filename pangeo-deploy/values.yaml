@@ -103,7 +103,7 @@ daskhub:
                   }
                   return {
                       "worker_cores_limit": options.worker_cores,
-                      "worker_cores": min(options.worker_cores / 2, 1),
+                      "worker_cores": 0.95 * min(options.worker_cores / 2, 1),  # Allow some room for k8s pods
                       "worker_memory": "%fG" % options.worker_memory,
                       "image": options.image,
                       "scheduler_extra_pod_annotations": extra_annotations,
