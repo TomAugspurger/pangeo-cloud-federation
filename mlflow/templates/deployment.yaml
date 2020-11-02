@@ -45,14 +45,14 @@ spec:
             - name: STATIC_PREFIX
               value: {{ .Values.static_prefix }}
 
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.service_prefix }}
-              port: http
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.service_prefix }}
-              port: http
+          # livenessProbe:
+          #   httpGet:
+          #     path: {{ .Values.service_prefix }}
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: {{ .Values.service_prefix }}
+          #     port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
