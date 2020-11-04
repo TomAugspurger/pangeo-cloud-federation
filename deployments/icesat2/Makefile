@@ -5,7 +5,7 @@ metrics:
 	helm upgrade --wait --install -n icesat2-staging prometheus prometheus-community/prometheus \
 		-f ../../metrics/prometheus-config.yaml
 	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.41.0/deploy/static/provider/aws/deploy.yaml
-	helm upgrade --install grafana-ingress nginx-stable/nginx-ingress
+	helm upgrade --install grafana-ingress nginx-stable/nginx-ingress -f ../../metrics/ingress-nginx.yaml
 	# TODO: should wait for that.
 	helm upgrade --wait --install -n icesat2-staging grafana grafana/grafana \
 		-f ../../metrics/grafana-config.yaml \
